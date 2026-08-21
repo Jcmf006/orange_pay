@@ -37,9 +37,11 @@ export default function PixPayment({ chavePix }: { chavePix: string }) {
           Ou escaneie o QR Code para pagar
         </p>
         <div className="mx-auto flex aspect-square w-48 items-center justify-center rounded-md border-2 border-dashed border-[var(--line)] bg-[var(--paper)] p-4 text-center text-xs text-[var(--ink-soft)]">
-          Coloque a imagem do QR Code em{" "}
-          <code className="font-mono">/public/qrcode-pix.png</code> e troque este bloco por{" "}
-          <code className="font-mono">next/image</code>.
+          <img
+  src="/public/qr-code-pix.png"
+  alt="QR Code PIX"
+  className="w-full h-full object-contain"
+/>
         </div>
       </div>
 

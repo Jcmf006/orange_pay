@@ -1,7 +1,5 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
-  /* config options here */
-};
+const nextConfig: NextConfig = { allowedDevOrigins: ["*.ngrok-free.dev", "*.ngrok-free.app"], };
 
-export default nextConfig;
+export default nextConfig; 
