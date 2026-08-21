@@ -17,6 +17,7 @@ export interface Pedido {
   prazo_pagamento: string;
   order_nsu: string | null;
   transaction_nsu: string | null;
+  checkout_url: string | null;
 }
 
 export interface NovoPedidoInput {
