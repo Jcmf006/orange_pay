@@ -5,6 +5,35 @@ import type { StatusEntrega, StatusPagamento } from "@/lib/types";
 const STATUS_PAGAMENTO: StatusPagamento[] = ["PENDENTE", "PAGO", "ATRASADO"];
 const STATUS_ENTREGA: StatusEntrega[] = ["PENDENTE", "ENTREGUE"];
 
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const pedidoId = Number(id);
+  if (!Number.isInteger(pedidoId)) {
+    return NextResponse.json({ error: "Pedido inválido." }, { status: 400 });
+  }
+
+  const { data, error } = await supabaseAdmin()
+    .from("pedidos")
+    .delete()
+    .eq("id", pedidoId)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    console.error("Erro ao excluir pedido:", error);
+    return NextResponse.json({ error: "Não foi possível excluir o pedido." }, { status: 500 });
+  }
+
+  if (!data) {
+    return NextResponse.json({ error: "Pedido não encontrado." }, { status: 404 });
+  }
+
+  return NextResponse.json({ removido: true, id: pedidoId });
+}
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -59,6 +88,23 @@ export async function PATCH(
   if (error || !data) {
     console.error("Erro ao atualizar pedido:", error);
     return NextResponse.json({ error: "Não foi possível atualizar o pedido." }, { status: 500 });
+  }
+
+  if (data.status_pagamento === "PAGO" && data.status_entrega === "ENTREGUE") {
+    const { error: deleteError } = await supabaseAdmin()
+      .from("pedidos")
+      .delete()
+      .eq("id", pedidoId);
+
+    if (deleteError) {
+      console.error("Erro ao apagar pedido concluído:", deleteError);
+      return NextResponse.json(
+        { error: "Pedido atualizado, mas não foi possível apagá-lo." },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ pedido: null, removido: true });
   }
 
   return NextResponse.json({ pedido: data });

@@ -4,6 +4,7 @@ import { validarPedido, telefoneParaDigitos } from "@/lib/format";
 import { PRECO_SACO } from "@/lib/types";
 import type { Pedido } from "@/lib/types";
 import { criarLinkPagamento } from "@/lib/infinitepay";
+import { calcularPrazoPagamento } from "@/lib/atraso";
 
 export async function POST(req: NextRequest) {
   let body: unknown;
@@ -49,6 +50,7 @@ export async function POST(req: NextRequest) {
       quantidade_sacos,
       valor_unitario,
       valor_total,
+      prazo_pagamento: calcularPrazoPagamento(new Date()),
     })
     .select()
     .single();

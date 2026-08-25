@@ -1,9 +1,10 @@
 import type { Pedido } from "@/lib/types";
 import { formatBRL } from "@/lib/format";
+import { calcularPrazoPagamento } from "@/lib/atraso";
 import StatusBadge from "@/components/StatusBadge";
 
 export default function ResumoPedido({ pedido }: { pedido: Pedido }) {
-  const prazo = new Date(pedido.prazo_pagamento).toLocaleDateString("pt-BR");
+  const prazo = new Date(calcularPrazoPagamento(pedido.data_pedido)).toLocaleDateString("pt-BR");
 
   return (
     <div className="space-y-4">

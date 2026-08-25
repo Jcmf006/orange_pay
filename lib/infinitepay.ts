@@ -26,7 +26,7 @@ function siteUrl(): string {
  */
 function webhookUrlComSegredo(): string {
   const secret = getEnv("WEBHOOK_SECRET");
-  return `${siteUrl()}/api/webhooks/infinitepay?secret=${encodeURIComponent(secret)}`;
+  return `${siteUrl()}/api/infinitepay?secret=${encodeURIComponent(secret)}`;
 }
 
 interface CriarLinkResposta {

@@ -64,6 +64,9 @@ export async function POST(req: NextRequest) {
   // Idempotência: se um webhook duplicado chegar (a InfinitePay reenvia em
   // caso de erro 400), não processa de novo.
   if (pedido.status_pagamento === "PAGO") {
+    if (pedido.status_entrega === "ENTREGUE") {
+      await supabaseAdmin().from("pedidos").delete().eq("id", pedidoId);
+    }
     return ok();
   }
 
@@ -107,6 +110,17 @@ export async function POST(req: NextRequest) {
   if (updateError) {
     console.error("Erro ao atualizar pedido após confirmar pagamento:", updateError);
     return erro("Falha ao gravar a confirmação de pagamento.");
+  }
+
+  if (pedido.status_entrega === "ENTREGUE") {
+    const { error: deleteError } = await supabaseAdmin()
+      .from("pedidos")
+      .delete()
+      .eq("id", pedidoId);
+    if (deleteError) {
+      console.error("Erro ao apagar pedido concluído:", deleteError);
+      return erro("Pagamento confirmado, mas não foi possível apagar o pedido.");
+    }
   }
 
   return ok();

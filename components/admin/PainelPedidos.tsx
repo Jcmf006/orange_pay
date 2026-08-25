@@ -19,6 +19,7 @@ export default function PainelPedidos({ pedidosIniciais }: { pedidosIniciais: Pe
   const [filtro, setFiltro] = useState<FiltroPagamento>("TODOS");
   const [busca, setBusca] = useState("");
   const [atualizandoId, setAtualizandoId] = useState<number | null>(null);
+  const [excluindoId, setExcluindoId] = useState<number | null>(null);
   const [verificandoAtraso, setVerificandoAtraso] = useState(false);
   const [mensagemAtraso, setMensagemAtraso] = useState<string | null>(null);
 
@@ -34,13 +35,14 @@ export default function PainelPedidos({ pedidosIniciais }: { pedidosIniciais: Pe
 
   const resumo = useMemo(() => {
     const totalPedidos = pedidos.length;
+    const totalSacos = pedidos.reduce((soma, p) => soma + p.quantidade_sacos, 0);
     const aReceber = pedidos
       .filter((p) => p.status_pagamento !== "PAGO")
       .reduce((soma, p) => soma + p.valor_total, 0);
     const recebido = pedidos
       .filter((p) => p.status_pagamento === "PAGO")
       .reduce((soma, p) => soma + p.valor_total, 0);
-    return { totalPedidos, aReceber, recebido };
+    return { totalPedidos, totalSacos, aReceber, recebido };
   }, [pedidos]);
 
   async function atualizarStatus(
@@ -56,8 +58,10 @@ export default function PainelPedidos({ pedidosIniciais }: { pedidosIniciais: Pe
         body: JSON.stringify({ [campo]: valor }),
       });
       if (!res.ok) throw new Error();
-      const { pedido } = await res.json();
-      setPedidos((prev) => prev.map((p) => (p.id === id ? pedido : p)));
+      const { pedido, removido } = await res.json();
+      setPedidos((prev) =>
+        removido ? prev.filter((p) => p.id !== id) : prev.map((p) => (p.id === id ? pedido : p))
+      );
     } catch {
       alert("Não foi possível atualizar esse pedido. Tente de novo.");
     } finally {
@@ -90,10 +94,29 @@ export default function PainelPedidos({ pedidosIniciais }: { pedidosIniciais: Pe
     }
   }
 
+  async function excluirPedido(pedido: Pedido) {
+    const confirmado = window.confirm(
+      `Excluir o pedido de ${pedido.nome}? Essa ação não pode ser desfeita.`
+    );
+    if (!confirmado) return;
+
+    setExcluindoId(pedido.id);
+    try {
+      const res = await fetch(`/api/admin/pedidos/${pedido.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      setPedidos((prev) => prev.filter((p) => p.id !== pedido.id));
+    } catch {
+      alert("Não foi possível excluir esse pedido. Tente de novo.");
+    } finally {
+      setExcluindoId(null);
+    }
+  }
+
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <CardResumo label="Pedidos" valor={String(resumo.totalPedidos)} />
+        <CardResumo label="Sacos" valor={String(resumo.totalSacos)} />
         <CardResumo label="A receber" valor={formatBRL(resumo.aReceber)} destaque />
         <CardResumo label="Recebido" valor={formatBRL(resumo.recebido)} verde />
       </div>
@@ -193,6 +216,14 @@ export default function PainelPedidos({ pedidosIniciais }: { pedidosIniciais: Pe
                     📦 Entregue em {new Date(p.data_entrega!).toLocaleDateString("pt-BR")}
                   </span>
                 )}
+
+                <BotaoAcao
+                  variante="perigo"
+                  disabled={atualizandoId === p.id || excluindoId === p.id}
+                  onClick={() => excluirPedido(p)}
+                >
+                  🗑️ Excluir
+                </BotaoAcao>
               </div>
             </li>
           ))}
@@ -238,7 +269,7 @@ function BotaoAcao({
   children: React.ReactNode;
   onClick: () => void;
   disabled?: boolean;
-  variante?: "primario" | "secundario";
+  variante?: "primario" | "secundario" | "perigo";
 }) {
   return (
     <button
@@ -248,7 +279,9 @@ function BotaoAcao({
       className={`rounded-md px-3 py-2 text-xs font-semibold transition disabled:opacity-50 ${
         variante === "primario"
           ? "bg-[var(--leaf)] text-white"
-          : "border-2 border-[var(--line)] text-[var(--ink-soft)]"
+          : variante === "perigo"
+            ? "border-2 border-[var(--red)] text-[var(--red)]"
+            : "border-2 border-[var(--line)] text-[var(--ink-soft)]"
       }`}
     >
       {children}
